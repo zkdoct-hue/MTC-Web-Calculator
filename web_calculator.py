@@ -1,17 +1,17 @@
 # ==============================================================================
-# Polished MTC Fine-Gray Web Calculator — v4
+# MTC Fine-Gray Web Calculator — Polished v5
 # ==============================================================================
 # Locked final model:
 #   Age + T stage + N stage + M stage + Surgery + Radiotherapy
 #
-# Prediction target:
-#   3-, 5-, and 10-year cumulative incidence of MTC-specific death,
+# Outputs:
+#   Exact 3-, 5-, and 10-year cumulative incidence of MTC-specific death,
 #   accounting for other-cause death as a competing event.
 #
-# Scientific principle:
-#   The app reads exact predictions exported from the locked QHScrnomo
-#   Fine-Gray model. No Cox approximation, no SHAP from another model,
-#   and no unvalidated low/medium/high risk thresholds are used.
+# Interpretation:
+#   Individual contributions are exact X*beta components of the same locked
+#   Fine-Gray model, relative to the reference categories. They are NOT SHAP
+#   values and should not be interpreted causally.
 # ==============================================================================
 
 from pathlib import Path
@@ -34,7 +34,7 @@ st.set_page_config(
 
 
 # ------------------------------------------------------------------------------
-# 2. Visual styling
+# 2. Styling
 # ------------------------------------------------------------------------------
 
 st.markdown(
@@ -43,26 +43,21 @@ st.markdown(
         :root {
             --ink: #172033;
             --muted: #667085;
-            --line: #E6EAF0;
+            --line: #E5E9F0;
             --panel: #F7F9FC;
             --accent: #315C7C;
-            --accent-soft: #EAF1F6;
             --accent-dark: #24465F;
-            --success-soft: #EEF6F3;
+            --accent-soft: #EAF1F6;
         }
 
         .block-container {
-            max-width: 1220px;
-            padding-top: 2.0rem;
-            padding-bottom: 3.5rem;
+            max-width: 1240px;
+            padding-top: 1.6rem;
+            padding-bottom: 3.2rem;
         }
 
         [data-testid="stSidebar"] {
             border-right: 1px solid var(--line);
-        }
-
-        [data-testid="stSidebar"] .block-container {
-            padding-top: 1.4rem;
         }
 
         h1, h2, h3 {
@@ -71,149 +66,126 @@ st.markdown(
         }
 
         .hero {
-            padding: 0.2rem 0 1.2rem 0;
+            padding: 0.1rem 0 1.0rem 0;
         }
 
         .eyebrow {
             display: inline-block;
-            padding: 0.32rem 0.68rem;
-            margin-bottom: 0.78rem;
+            padding: 0.30rem 0.68rem;
+            margin-bottom: 0.66rem;
             border-radius: 999px;
             background: var(--accent-soft);
             color: var(--accent-dark);
-            font-size: 0.78rem;
-            font-weight: 700;
-            letter-spacing: 0.035em;
+            font-size: 0.76rem;
+            font-weight: 750;
+            letter-spacing: 0.045em;
         }
 
         .hero-title {
             margin: 0;
-            max-width: 940px;
-            font-size: clamp(2rem, 4vw, 3.15rem);
+            font-size: clamp(2rem, 3.6vw, 2.9rem);
             line-height: 1.08;
-            font-weight: 760;
+            font-weight: 780;
             color: var(--ink);
             letter-spacing: -0.035em;
         }
 
         .hero-subtitle {
-            max-width: 980px;
-            margin-top: 0.75rem;
+            margin-top: 0.62rem;
+            max-width: 1000px;
             color: var(--muted);
-            font-size: 1.01rem;
-            line-height: 1.62;
+            font-size: 0.98rem;
+            line-height: 1.58;
         }
 
         .section-kicker {
-            margin-top: 0.2rem;
-            margin-bottom: 0.18rem;
+            margin-top: 0.05rem;
+            margin-bottom: 0.14rem;
             color: var(--accent);
-            font-size: 0.77rem;
-            font-weight: 750;
+            font-size: 0.74rem;
+            font-weight: 760;
             text-transform: uppercase;
             letter-spacing: 0.08em;
         }
 
         .section-title {
             margin-top: 0;
-            margin-bottom: 0.85rem;
-            font-size: 1.45rem;
+            margin-bottom: 0.75rem;
+            font-size: 1.35rem;
             line-height: 1.25;
-            font-weight: 720;
+            font-weight: 740;
             color: var(--ink);
         }
 
         .risk-card {
-            min-height: 142px;
-            padding: 1.20rem 1.25rem 1.08rem 1.25rem;
+            min-height: 132px;
+            padding: 1.08rem 1.15rem 1rem 1.15rem;
             border: 1px solid var(--line);
-            border-radius: 16px;
+            border-radius: 15px;
             background: #FFFFFF;
-            box-shadow: 0 5px 18px rgba(23, 32, 51, 0.045);
+            box-shadow: 0 4px 16px rgba(23, 32, 51, 0.04);
         }
 
         .risk-horizon {
             color: var(--muted);
-            font-size: 0.78rem;
-            font-weight: 700;
-            letter-spacing: 0.055em;
+            font-size: 0.74rem;
+            font-weight: 740;
             text-transform: uppercase;
+            letter-spacing: 0.055em;
         }
 
         .risk-value {
-            margin-top: 0.36rem;
+            margin-top: 0.28rem;
             color: var(--ink);
-            font-size: 2.18rem;
-            font-weight: 760;
+            font-size: 2.05rem;
+            font-weight: 790;
             letter-spacing: -0.035em;
             line-height: 1.10;
         }
 
         .risk-label {
-            margin-top: 0.42rem;
+            margin-top: 0.34rem;
             color: var(--muted);
-            font-size: 0.84rem;
+            font-size: 0.80rem;
             line-height: 1.35;
         }
 
-        .profile-card {
-            min-height: 86px;
-            padding: 0.88rem 1.0rem;
+        .profile-chip {
+            min-height: 69px;
+            padding: 0.70rem 0.82rem;
             border: 1px solid var(--line);
-            border-radius: 13px;
+            border-radius: 11px;
             background: var(--panel);
         }
 
         .profile-label {
             color: var(--muted);
-            font-size: 0.76rem;
+            font-size: 0.70rem;
             font-weight: 650;
         }
 
         .profile-value {
-            margin-top: 0.26rem;
+            margin-top: 0.18rem;
             color: var(--ink);
-            font-size: 1.02rem;
-            font-weight: 700;
-        }
-
-        .validation-card {
-            min-height: 92px;
-            padding: 0.85rem 0.95rem;
-            border: 1px solid var(--line);
-            border-radius: 13px;
-            background: #FFFFFF;
-        }
-
-        .validation-label {
-            color: var(--muted);
-            font-size: 0.74rem;
-            font-weight: 650;
-        }
-
-        .validation-value {
-            margin-top: 0.22rem;
-            color: var(--ink);
-            font-size: 1.38rem;
-            font-weight: 750;
-            line-height: 1.15;
+            font-size: 0.96rem;
+            font-weight: 720;
         }
 
         .soft-note {
-            padding: 0.92rem 1.05rem;
+            padding: 0.80rem 0.92rem;
             border-left: 3px solid var(--accent);
-            border-radius: 10px;
+            border-radius: 9px;
             background: var(--accent-soft);
             color: #334155;
-            font-size: 0.88rem;
-            line-height: 1.52;
+            font-size: 0.82rem;
+            line-height: 1.48;
         }
 
         .empty-state {
-            margin-top: 1.25rem;
-            padding: 2.0rem 1.4rem;
+            margin-top: 1.1rem;
+            padding: 1.8rem 1.2rem;
             border: 1px dashed #C8D1DC;
-            border-radius: 16px;
+            border-radius: 15px;
             background: #FAFBFD;
             text-align: center;
             color: var(--muted);
@@ -221,15 +193,15 @@ st.markdown(
 
         .empty-state strong {
             display: block;
-            margin-bottom: 0.32rem;
+            margin-bottom: 0.28rem;
             color: var(--ink);
-            font-size: 1.03rem;
+            font-size: 1.02rem;
         }
 
         .footer-note {
             color: var(--muted);
-            font-size: 0.78rem;
-            line-height: 1.5;
+            font-size: 0.77rem;
+            line-height: 1.48;
         }
 
         div[data-testid="stFormSubmitButton"] button {
@@ -238,12 +210,12 @@ st.markdown(
             border: 1px solid var(--accent-dark);
             background: var(--accent);
             color: white;
-            font-weight: 700;
+            font-weight: 720;
         }
 
         div[data-testid="stFormSubmitButton"] button:hover {
-            border-color: var(--accent-dark);
             background: var(--accent-dark);
+            border-color: var(--accent-dark);
             color: white;
         }
 
@@ -257,10 +229,10 @@ st.markdown(
 
         @media (max-width: 900px) {
             .block-container {
-                padding-top: 1.2rem;
+                padding-top: 1.0rem;
             }
             .hero-title {
-                font-size: 2.1rem;
+                font-size: 2.0rem;
             }
         }
     </style>
@@ -270,7 +242,7 @@ st.markdown(
 
 
 # ------------------------------------------------------------------------------
-# 3. Exact Fine-Gray prediction table
+# 3. Load verified locked-model exports
 # ------------------------------------------------------------------------------
 
 APP_DIR = Path(__file__).resolve().parent
@@ -279,13 +251,17 @@ META_FILE = APP_DIR / "MTC_FineGray_WebCalculator_Metadata.csv"
 
 
 @st.cache_data
-def load_lookup():
+def load_inputs():
     if not LOOKUP_FILE.exists():
         raise FileNotFoundError(
             "MTC_FineGray_WebCalculator_Lookup.csv was not found."
         )
+    if not META_FILE.exists():
+        raise FileNotFoundError(
+            "MTC_FineGray_WebCalculator_Metadata.csv was not found."
+        )
 
-    df = pd.read_csv(
+    lookup = pd.read_csv(
         LOOKUP_FILE,
         dtype={
             "Profile_key": str,
@@ -297,6 +273,7 @@ def load_lookup():
             "Radiation": str,
         },
     )
+    meta = pd.read_csv(META_FILE)
 
     required = {
         "Profile_key",
@@ -309,35 +286,63 @@ def load_lookup():
         "Risk_36m",
         "Risk_60m",
         "Risk_120m",
+        "Linear_predictor",
     }
-
-    missing = required.difference(df.columns)
+    missing = required.difference(lookup.columns)
     if missing:
         raise ValueError(
             "The lookup CSV is missing required columns: "
             + ", ".join(sorted(missing))
         )
 
-    if len(df) != 192:
+    if len(lookup) != 192:
         raise ValueError(
-            f"Expected 192 predictor profiles; found {len(df)}."
+            f"Expected 192 predictor profiles; found {len(lookup)}."
         )
 
-    if df["Profile_key"].duplicated().any():
+    if lookup["Profile_key"].duplicated().any():
         raise ValueError("Duplicate Profile_key values were found.")
 
-    for col in ["Risk_36m", "Risk_60m", "Risk_120m"]:
-        df[col] = pd.to_numeric(df[col], errors="raise")
-        if ((df[col] < 0) | (df[col] > 1)).any():
-            raise ValueError(f"{col} contains values outside [0, 1].")
+    for col in ["Risk_36m", "Risk_60m", "Risk_120m", "Linear_predictor"]:
+        lookup[col] = pd.to_numeric(lookup[col], errors="raise")
 
-    return df
+    if ((lookup[["Risk_36m", "Risk_60m", "Risk_120m"]] < 0) |
+        (lookup[["Risk_36m", "Risk_60m", "Risk_120m"]] > 1)).any().any():
+        raise ValueError("Predicted risks outside [0, 1] were found.")
+
+    meta_dict = dict(zip(meta["Item"].astype(str), meta["Value"]))
+
+    # Exact coefficients exported from the same locked model.
+    coef = {
+        item.replace("Coefficient_", "", 1): float(value)
+        for item, value in meta_dict.items()
+        if item.startswith("Coefficient_")
+    }
+
+    expected_coef_terms = {
+        "Age=55-69",
+        "Age=>=70",
+        "T_stage=T2",
+        "T_stage=T3",
+        "T_stage=T4",
+        "N_stage=N1",
+        "M_stage=M1",
+        "Surgery=Yes",
+        "Radiation=Yes",
+    }
+
+    if set(coef) != expected_coef_terms:
+        raise ValueError(
+            "Coefficient metadata does not match the locked six-variable model."
+        )
+
+    return lookup, meta, coef
 
 
 try:
-    lookup = load_lookup()
+    lookup, metadata, COEF = load_inputs()
 except Exception as exc:
-    st.error("The prediction table could not be loaded.")
+    st.error("The locked Fine–Gray model exports could not be loaded.")
     st.code(str(exc))
     st.stop()
 
@@ -359,12 +364,6 @@ AGE_LABELS = {
 }
 
 
-def build_profile_key(age, t_stage, n_stage, m_stage, surgery, radiation):
-    return "|".join(
-        [age, t_stage, n_stage, m_stage, surgery, radiation]
-    )
-
-
 def pct(value):
     value = 100.0 * float(value)
     if value >= 99.95:
@@ -372,26 +371,86 @@ def pct(value):
     return f"{value:.1f}%"
 
 
-def profile_card(label, value):
+def profile_key(age, t_stage, n_stage, m_stage, surgery, radiation):
+    return "|".join(
+        [age, t_stage, n_stage, m_stage, surgery, radiation]
+    )
+
+
+def chip(label, value):
     return f"""
-    <div class="profile-card">
+    <div class="profile-chip">
         <div class="profile-label">{label}</div>
         <div class="profile-value">{value}</div>
     </div>
     """
 
 
-def validation_card(label, value):
-    return f"""
-    <div class="validation-card">
-        <div class="validation-label">{label}</div>
-        <div class="validation-value">{value}</div>
-    </div>
-    """
+def individual_contributions(p):
+    # Exact X*beta components on the Fine–Gray linear-predictor scale.
+    rows = [
+        {
+            "Variable": "Age",
+            "Level": AGE_LABELS[p["age"]],
+            "Contribution": (
+                0.0 if p["age"] == "<55"
+                else COEF[f"Age={p['age']}"]
+            ),
+        },
+        {
+            "Variable": "T stage",
+            "Level": p["t_stage"],
+            "Contribution": (
+                0.0 if p["t_stage"] == "T1"
+                else COEF[f"T_stage={p['t_stage']}"]
+            ),
+        },
+        {
+            "Variable": "N stage",
+            "Level": p["n_stage"],
+            "Contribution": (
+                0.0 if p["n_stage"] == "N0"
+                else COEF["N_stage=N1"]
+            ),
+        },
+        {
+            "Variable": "M stage",
+            "Level": p["m_stage"],
+            "Contribution": (
+                0.0 if p["m_stage"] == "M0"
+                else COEF["M_stage=M1"]
+            ),
+        },
+        {
+            "Variable": "Surgery",
+            "Level": p["surgery"],
+            "Contribution": (
+                0.0 if p["surgery"] == "No"
+                else COEF["Surgery=Yes"]
+            ),
+        },
+        {
+            "Variable": "Radiotherapy",
+            "Level": p["radiation"],
+            "Contribution": (
+                0.0 if p["radiation"] == "No"
+                else COEF["Radiation=Yes"]
+            ),
+        },
+    ]
+
+    df = pd.DataFrame(rows)
+    df["Display"] = df["Variable"] + "  ·  " + df["Level"]
+    df["Direction"] = df["Contribution"].apply(
+        lambda x: "Higher model score" if x > 1e-12
+        else ("Lower model score" if x < -1e-12 else "Reference category")
+    )
+    df["Contribution_label"] = df["Contribution"].map(lambda x: f"{x:+.2f}")
+    return df
 
 
 # ------------------------------------------------------------------------------
-# 5. Sidebar inputs
+# 5. Sidebar
 # ------------------------------------------------------------------------------
 
 st.sidebar.markdown("## Patient characteristics")
@@ -417,14 +476,8 @@ with st.sidebar.form("patient_input_form"):
         use_container_width=True,
     )
 
-st.sidebar.markdown("---")
-st.sidebar.caption(
-    "Prediction horizons: 3, 5, and 10 years. "
-    "Outcome: cumulative incidence of MTC-specific death."
-)
-
 if submitted:
-    st.session_state["mtc_last_profile"] = {
+    st.session_state["mtc_profile"] = {
         "age": age,
         "t_stage": t_stage,
         "n_stage": n_stage,
@@ -432,6 +485,12 @@ if submitted:
         "surgery": surgery,
         "radiation": radiation,
     }
+
+st.sidebar.markdown("---")
+st.sidebar.caption(
+    "Outcome: cumulative incidence of MTC-specific death. "
+    "Other-cause death is treated as a competing event."
+)
 
 
 # ------------------------------------------------------------------------------
@@ -444,9 +503,9 @@ st.markdown(
         <div class="eyebrow">FINE–GRAY COMPETING-RISK MODEL</div>
         <h1 class="hero-title">MTC-Specific Mortality Risk Calculator</h1>
         <div class="hero-subtitle">
-            A web-based prediction tool for medullary thyroid carcinoma.
-            Estimates are cumulative incidences of MTC-specific death and
-            explicitly account for death from other causes as a competing event.
+            Individualized 3-, 5-, and 10-year predictions for medullary
+            thyroid carcinoma. The model explicitly accounts for death from
+            other causes as a competing event.
         </div>
     </div>
     """,
@@ -455,12 +514,12 @@ st.markdown(
 
 
 # ------------------------------------------------------------------------------
-# 7. Prediction result
+# 7. Results
 # ------------------------------------------------------------------------------
 
-profile = st.session_state.get("mtc_last_profile")
+p = st.session_state.get("mtc_profile")
 
-if profile is None:
+if p is None:
     st.markdown(
         """
         <div class="empty-state">
@@ -473,25 +532,20 @@ if profile is None:
     )
 
 else:
-    profile_key = build_profile_key(
-        profile["age"],
-        profile["t_stage"],
-        profile["n_stage"],
-        profile["m_stage"],
-        profile["surgery"],
-        profile["radiation"],
+    key = profile_key(
+        p["age"], p["t_stage"], p["n_stage"],
+        p["m_stage"], p["surgery"], p["radiation"]
     )
 
-    row = lookup.loc[lookup["Profile_key"] == profile_key]
+    row = lookup.loc[lookup["Profile_key"] == key]
 
     if len(row) != 1:
-        st.error(
-            "The selected patient profile could not be matched uniquely."
-        )
+        st.error("The selected patient profile could not be matched uniquely.")
         st.stop()
 
     r = row.iloc[0]
 
+    # ---- Risk cards -----------------------------------------------------------
     st.markdown(
         '<div class="section-kicker">Individual prediction</div>'
         '<div class="section-title">Predicted MTC-specific mortality</div>',
@@ -500,19 +554,17 @@ else:
 
     c1, c2, c3 = st.columns(3, gap="medium")
 
-    risk_specs = [
-        ("3-year risk", r["Risk_36m"]),
-        ("5-year risk", r["Risk_60m"]),
-        ("10-year risk", r["Risk_120m"]),
-    ]
-
-    for col, (label, value) in zip([c1, c2, c3], risk_specs):
+    for col, label, val in [
+        (c1, "3-year risk", r["Risk_36m"]),
+        (c2, "5-year risk", r["Risk_60m"]),
+        (c3, "10-year risk", r["Risk_120m"]),
+    ]:
         with col:
             st.markdown(
                 f"""
                 <div class="risk-card">
                     <div class="risk-horizon">{label}</div>
-                    <div class="risk-value">{pct(value)}</div>
+                    <div class="risk-value">{pct(val)}</div>
                     <div class="risk-label">
                         Cumulative incidence of MTC-specific death
                     </div>
@@ -523,22 +575,19 @@ else:
 
     st.write("")
 
-    left, right = st.columns([1.32, 1.0], gap="large")
+    # ---- Main interactive visualization area ---------------------------------
+    left, right = st.columns([1.0, 1.12], gap="large")
 
-    # --------------------------------------------------------------------------
-    # Exact 3/5/10-year risk visualization
-    # --------------------------------------------------------------------------
     with left:
         st.markdown(
             '<div class="section-kicker">Prediction horizons</div>'
-            '<div class="section-title">Risk at 3, 5, and 10 years</div>',
+            '<div class="section-title">Risk across prespecified horizons</div>',
             unsafe_allow_html=True,
         )
 
-        chart_df = pd.DataFrame(
+        risk_df = pd.DataFrame(
             {
-                "Horizon": ["3 years", "5 years", "10 years"],
-                "Order": [3, 5, 10],
+                "Years": [3, 5, 10],
                 "Risk": [
                     float(r["Risk_36m"]),
                     float(r["Risk_60m"]),
@@ -552,172 +601,276 @@ else:
             }
         )
 
-        max_risk = chart_df["Risk"].max()
-        chart_top = min(
-            1.0,
-            max(0.05, max_risk * 1.22 + 0.008)
-        )
+        max_risk = risk_df["Risk"].max()
+        y_top = min(1.0, max(0.05, max_risk * 1.24 + 0.008))
 
-        bars = (
-            alt.Chart(chart_df)
-            .mark_bar(
-                cornerRadiusTopLeft=7,
-                cornerRadiusTopRight=7,
-                size=54,
+        line = (
+            alt.Chart(risk_df)
+            .mark_line(
+                point=alt.OverlayMarkDef(
+                    filled=True,
+                    size=95,
+                    color="#315C7C",
+                ),
+                strokeWidth=3,
                 color="#315C7C",
             )
             .encode(
                 x=alt.X(
-                    "Horizon:N",
-                    sort=["3 years", "5 years", "10 years"],
-                    title=None,
+                    "Years:Q",
+                    title="Prediction horizon (years)",
+                    scale=alt.Scale(domain=[2.5, 10.5]),
                     axis=alt.Axis(
-                        labelAngle=0,
-                        labelColor="#475467",
-                        labelFontSize=12,
-                        ticks=False,
+                        values=[3, 5, 10],
+                        format="d",
+                        grid=False,
                         domain=False,
+                        labelColor="#475467",
+                        titleColor="#475467",
+                        titlePadding=12,
                     ),
                 ),
                 y=alt.Y(
                     "Risk:Q",
                     title="Predicted cumulative incidence",
-                    scale=alt.Scale(domain=[0, chart_top]),
+                    scale=alt.Scale(domain=[0, y_top]),
                     axis=alt.Axis(
                         format=".0%",
                         grid=True,
                         gridColor="#EEF1F5",
                         domain=False,
-                        tickColor="#D8DEE8",
                         labelColor="#667085",
                         titleColor="#475467",
-                        titlePadding=14,
+                        titlePadding=12,
                     ),
                 ),
                 tooltip=[
-                    alt.Tooltip("Horizon:N", title="Horizon"),
-                    alt.Tooltip("Risk:Q", title="Risk", format=".2%"),
+                    alt.Tooltip("Years:Q", title="Horizon", format=".0f"),
+                    alt.Tooltip("Risk:Q", title="Predicted risk", format=".2%"),
                 ],
             )
         )
 
         labels = (
-            alt.Chart(chart_df)
+            alt.Chart(risk_df)
             .mark_text(
-                dy=-12,
+                dy=-14,
                 fontSize=13,
                 fontWeight=700,
                 color="#172033",
             )
             .encode(
-                x=alt.X(
-                    "Horizon:N",
-                    sort=["3 years", "5 years", "10 years"],
-                ),
+                x="Years:Q",
                 y="Risk:Q",
                 text="Label:N",
             )
         )
 
-        chart = (
-            (bars + labels)
-            .properties(height=310)
-            .configure_view(strokeWidth=0)
+        st.altair_chart(
+            (line + labels)
+            .properties(height=315)
+            .configure_view(strokeWidth=0),
+            use_container_width=True,
         )
-
-        st.altair_chart(chart, use_container_width=True)
 
         st.markdown(
             """
             <div class="soft-note">
-                The chart displays the model's exact predictions at the three
-                prespecified horizons (3, 5, and 10 years). No low-, medium-,
-                or high-risk thresholds are imposed.
+                The line connects the model's three prespecified prediction
+                horizons for visualization; it should not be interpreted as
+                an estimated continuous risk curve between those time points.
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-    # --------------------------------------------------------------------------
-    # Selected clinical profile
-    # --------------------------------------------------------------------------
     with right:
         st.markdown(
-            '<div class="section-kicker">Current inputs</div>'
-            '<div class="section-title">Selected clinical profile</div>',
+            '<div class="section-kicker">Individual model explanation</div>'
+            '<div class="section-title">Predictor contributions to the Fine–Gray score</div>',
             unsafe_allow_html=True,
         )
 
-        pcols = st.columns(2, gap="small")
-        profile_items = [
-            ("Age", AGE_LABELS[profile["age"]]),
-            ("T stage", profile["t_stage"]),
-            ("N stage", profile["n_stage"]),
-            ("M stage", profile["m_stage"]),
-            ("Surgery", profile["surgery"]),
-            ("Radiotherapy", profile["radiation"]),
-        ]
+        contrib = individual_contributions(p)
 
-        for idx, (label, value) in enumerate(profile_items):
-            with pcols[idx % 2]:
-                st.markdown(
-                    profile_card(label, value),
-                    unsafe_allow_html=True,
-                )
-                st.write("")
+        # Verify exact decomposition against the exported lookup linear predictor.
+        contribution_sum = float(contrib["Contribution"].sum())
+        locked_lp = float(r["Linear_predictor"])
+        if abs(contribution_sum - locked_lp) > 1e-8:
+            st.error(
+                "Internal model-audit check failed: predictor contributions do "
+                "not reproduce the locked-model linear predictor."
+            )
+            st.stop()
+
+        max_abs = max(0.35, float(contrib["Contribution"].abs().max()) * 1.25)
+
+        contribution_chart = (
+            alt.Chart(contrib)
+            .mark_bar(
+                cornerRadiusEnd=5,
+                size=24,
+            )
+            .encode(
+                y=alt.Y(
+                    "Display:N",
+                    sort=alt.SortField(
+                        field="Contribution",
+                        order="descending",
+                    ),
+                    title=None,
+                    axis=alt.Axis(
+                        labelLimit=190,
+                        labelColor="#344054",
+                        labelFontSize=11,
+                        ticks=False,
+                        domain=False,
+                    ),
+                ),
+                x=alt.X(
+                    "Contribution:Q",
+                    title="Contribution to Fine–Gray linear predictor (Xβ)",
+                    scale=alt.Scale(domain=[-max_abs, max_abs]),
+                    axis=alt.Axis(
+                        grid=True,
+                        gridColor="#EEF1F5",
+                        domain=False,
+                        labelColor="#667085",
+                        titleColor="#475467",
+                        titlePadding=12,
+                    ),
+                ),
+                color=alt.Color(
+                    "Direction:N",
+                    scale=alt.Scale(
+                        domain=[
+                            "Higher model score",
+                            "Lower model score",
+                            "Reference category",
+                        ],
+                        range=[
+                            "#9A4F46",
+                            "#3E6C8A",
+                            "#B7C0CC",
+                        ],
+                    ),
+                    legend=alt.Legend(
+                        title=None,
+                        orient="bottom",
+                    ),
+                ),
+                tooltip=[
+                    alt.Tooltip("Variable:N", title="Variable"),
+                    alt.Tooltip("Level:N", title="Selected level"),
+                    alt.Tooltip(
+                        "Contribution:Q",
+                        title="Xβ contribution",
+                        format="+.3f",
+                    ),
+                ],
+            )
+        )
+
+        zero_line = (
+            alt.Chart(pd.DataFrame({"x": [0]}))
+            .mark_rule(
+                color="#475467",
+                strokeWidth=1.2,
+            )
+            .encode(x="x:Q")
+        )
+
+        contrib_labels = (
+            alt.Chart(contrib)
+            .mark_text(
+                align="left",
+                baseline="middle",
+                dx=6,
+                fontSize=11,
+                fontWeight=650,
+                color="#172033",
+            )
+            .encode(
+                y=alt.Y(
+                    "Display:N",
+                    sort=alt.SortField(
+                        field="Contribution",
+                        order="descending",
+                    ),
+                ),
+                x="Contribution:Q",
+                text="Contribution_label:N",
+            )
+        )
+
+        st.altair_chart(
+            (contribution_chart + zero_line + contrib_labels)
+            .properties(height=315)
+            .configure_view(strokeWidth=0),
+            use_container_width=True,
+        )
 
         st.markdown(
             """
             <div class="soft-note">
-                These values are cumulative incidences of MTC-specific death,
-                not overall-survival probabilities and not estimates of
-                treatment benefit.
+                Contributions are exact components of the same final Fine–Gray
+                model on the linear-predictor scale, relative to the reference
+                categories. Positive values increase the model score; negative
+                values decrease it. Treatment-related contributions are
+                predictive associations and must not be interpreted causally.
             </div>
             """,
             unsafe_allow_html=True,
         )
+
+    # ---- Compact selected profile --------------------------------------------
+    st.write("")
+    st.markdown(
+        '<div class="section-kicker">Current inputs</div>'
+        '<div class="section-title">Selected clinical profile</div>',
+        unsafe_allow_html=True,
+    )
+
+    profile_cols = st.columns(6, gap="small")
+    profile_items = [
+        ("Age", AGE_LABELS[p["age"]]),
+        ("T stage", p["t_stage"]),
+        ("N stage", p["n_stage"]),
+        ("M stage", p["m_stage"]),
+        ("Surgery", p["surgery"]),
+        ("Radiotherapy", p["radiation"]),
+    ]
+
+    for col, (label, value) in zip(profile_cols, profile_items):
+        with col:
+            st.markdown(chip(label, value), unsafe_allow_html=True)
 
 
 # ------------------------------------------------------------------------------
-# 8. Model validation summary
+# 8. Collapsible model-performance section
 # ------------------------------------------------------------------------------
 
 st.write("")
 st.divider()
-st.markdown(
-    '<div class="section-kicker">Model validation</div>'
-    '<div class="section-title">Held-out internal validation</div>',
-    unsafe_allow_html=True,
-)
 
-v1, v2, v3, v4 = st.columns(4, gap="small")
+with st.expander("Model performance & held-out internal validation"):
+    p1, p2, p3, p4 = st.columns(4)
+    p1.metric("Competing-risk C-index", "0.863")
+    p2.metric("3-year AUC", "0.919")
+    p3.metric("5-year AUC", "0.929")
+    p4.metric("10-year AUC", "0.858")
 
-validation_specs = [
-    ("Competing-risk C-index", "0.863"),
-    ("3-year AUC", "0.919"),
-    ("5-year AUC", "0.929"),
-    ("10-year AUC", "0.858"),
-]
-
-for col, (label, value) in zip([v1, v2, v3, v4], validation_specs):
-    with col:
-        st.markdown(
-            validation_card(label, value),
-            unsafe_allow_html=True,
-        )
-
-st.caption(
-    "Development cohort: 1,521 patients. Held-out internal validation cohort: "
-    "651 patients. Time-dependent AUCs are reported at the prespecified "
-    "3-, 5-, and 10-year horizons."
-)
+    st.caption(
+        "Development cohort: 1,521 patients. Held-out internal validation cohort: "
+        "651 patients. Time-dependent AUCs are reported at 3, 5, and 10 years."
+    )
 
 
 # ------------------------------------------------------------------------------
-# 9. Model information
+# 9. Collapsible technical section
 # ------------------------------------------------------------------------------
 
-with st.expander("Model details and technical information"):
+with st.expander("Model details & technical information"):
     st.markdown(
         """
         **Final model:** Fine–Gray competing-risk regression  
@@ -726,23 +879,22 @@ with st.expander("Model details and technical information"):
         **Prediction target:** Cumulative incidence of MTC-specific death  
         **Competing event:** Death from other causes  
 
-        The application uses exact predictions exported from the locked final
-        Fine–Gray model for all 192 possible combinations of the six categorical
-        predictors.
+        The calculator uses exact predictions exported from the locked final
+        Fine–Gray model for all 192 possible predictor combinations.
+
+        The individual contribution plot is not a SHAP plot. It displays the
+        exact selected-level coefficient contribution to the Fine–Gray linear
+        predictor and is internally checked against the exported locked-model
+        linear predictor.
         """
     )
 
-    if META_FILE.exists():
-        try:
-            metadata = pd.read_csv(META_FILE)
-            with st.popover("Technical model metadata"):
-                st.dataframe(
-                    metadata,
-                    hide_index=True,
-                    use_container_width=True,
-                )
-        except Exception:
-            pass
+    with st.popover("Technical model metadata"):
+        st.dataframe(
+            metadata,
+            hide_index=True,
+            use_container_width=True,
+        )
 
 
 # ------------------------------------------------------------------------------
