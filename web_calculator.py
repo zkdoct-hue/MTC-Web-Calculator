@@ -1,5 +1,5 @@
 # ==============================================================================
-# MTC Fine-Gray Web Calculator — Polished v5
+# MTC Fine-Gray Web Calculator — Polished v5.1 (Altair 6 compatibility fix)
 # ==============================================================================
 # Locked final model:
 #   Age + T stage + N stage + M stage + Surgery + Radiotherapy
@@ -787,7 +787,7 @@ else:
                 baseline="middle",
                 dx=6,
                 fontSize=11,
-                fontWeight=650,
+                fontWeight="bold",
                 color="#172033",
             )
             .encode(
