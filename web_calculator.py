@@ -1,5 +1,5 @@
 # ==============================================================================
-# MTC Fine-Gray Web Calculator — Polished v5.1 (Altair 6 compatibility fix)
+# MTC Fine-Gray Web Calculator — Polished v5.2 FINAL
 # ==============================================================================
 # Locked final model:
 #   Age + T stage + N stage + M stage + Surgery + Radiotherapy
@@ -441,11 +441,27 @@ def individual_contributions(p):
 
     df = pd.DataFrame(rows)
     df["Display"] = df["Variable"] + "  ·  " + df["Level"]
+
+    # Direction labels are intentionally concise for the chart legend.
     df["Direction"] = df["Contribution"].apply(
-        lambda x: "Higher model score" if x > 1e-12
-        else ("Lower model score" if x < -1e-12 else "Reference category")
+        lambda x: "Higher score" if x > 1e-12
+        else ("Lower score" if x < -1e-12 else "Reference")
     )
-    df["Contribution_label"] = df["Contribution"].map(lambda x: f"{x:+.2f}")
+
+    # Reference categories are shown as "Reference" rather than +0.00.
+    df["Contribution_label"] = df["Contribution"].apply(
+        lambda x: "Reference" if abs(x) <= 1e-12 else f"{x:+.2f}"
+    )
+
+    # Order by absolute X*beta contribution so the most influential selected
+    # characteristics appear first for the current patient.
+    df["AbsContribution"] = df["Contribution"].abs()
+    df = df.sort_values(
+        ["AbsContribution", "Contribution"],
+        ascending=[False, False],
+        kind="mergesort",
+    ).reset_index(drop=True)
+
     return df
 
 
@@ -692,6 +708,7 @@ else:
         )
 
         contrib = individual_contributions(p)
+        contribution_order = contrib["Display"].tolist()
 
         # Verify exact decomposition against the exported lookup linear predictor.
         contribution_sum = float(contrib["Contribution"].sum())
@@ -714,10 +731,7 @@ else:
             .encode(
                 y=alt.Y(
                     "Display:N",
-                    sort=alt.SortField(
-                        field="Contribution",
-                        order="descending",
-                    ),
+                    sort=contribution_order,
                     title=None,
                     axis=alt.Axis(
                         labelLimit=190,
@@ -744,9 +758,9 @@ else:
                     "Direction:N",
                     scale=alt.Scale(
                         domain=[
-                            "Higher model score",
-                            "Lower model score",
-                            "Reference category",
+                            "Higher score",
+                            "Lower score",
+                            "Reference",
                         ],
                         range=[
                             "#9A4F46",
@@ -757,6 +771,8 @@ else:
                     legend=alt.Legend(
                         title=None,
                         orient="bottom",
+                        labelLimit=120,
+                        columnPadding=12,
                     ),
                 ),
                 tooltip=[
@@ -793,10 +809,7 @@ else:
             .encode(
                 y=alt.Y(
                     "Display:N",
-                    sort=alt.SortField(
-                        field="Contribution",
-                        order="descending",
-                    ),
+                    sort=contribution_order,
                 ),
                 x="Contribution:Q",
                 text="Contribution_label:N",
@@ -815,9 +828,11 @@ else:
             <div class="soft-note">
                 Contributions are exact components of the same final Fine–Gray
                 model on the linear-predictor scale, relative to the reference
-                categories. Positive values increase the model score; negative
-                values decrease it. Treatment-related contributions are
-                predictive associations and must not be interpreted causally.
+                categories. Predictors are ordered by absolute contribution.
+                Positive values increase the model score, negative values
+                decrease it, and reference categories are shown in gray.
+                Treatment-related contributions are predictive associations
+                and must not be interpreted causally.
             </div>
             """,
             unsafe_allow_html=True,
